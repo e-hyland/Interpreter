@@ -1,0 +1,62 @@
+I have extended the parser to be able to define variables longer than one character. The variable names can be any sequence of letters or numbers (uppercase or lowercase) but must begin with a letter.  I have created a hash table which stores the variable values to be able to access them throughout the program. I have used the separate chaining method of hashing. The linked list is allowed to have a maximum of three words in it before the whole array gets resized. If a variable is accessed before being set, it is assumed to be 0.
+
+I have also added a new instruction in the grammar, 'JUMP'. This allows the user to create multiple functions (example program below). 'JUMP' will skip to the title of the function and execute it until finished and then return to the main program. 
+
+I have created the functionality to define local variables to each function. This was done by adding a string to the variable structure, Node, called 'char func'. This tags each variable with the function name it belongs to. Therefore, when looking up a variable, the function name is also compared to make sure the right value is retrieved or stored. If the variable has not been set, the value is assumed to be 0. This tagging method could be extended to differentiate between global and local variables if we were able to pass arguments into functions. 
+
+Revised grammar:
+
+<MAIN> ::= "{" <INSTRCLST>
+<INSTRCLST> ::= <INSTRUCTION><INSTRCLST> | "}"
+<INSTRUCTION> ::= <FD> |
+                  <LT> |
+                  <RT> |
+                  <LT> |
+                  <DO> |
+                  <SET> |
+                  <JUMP> |
+<FD> ::= "FD" <VARNUM>
+<LT> ::= "LT" <VARNUM>
+<RT> ::= "RT" <VARNUM>
+<DO> ::= "DO" <VAR> "FROM" <VARNUM> "TO"
+         <VARNUM> "{" <INSTRCLST>
+<JUMP> ::= <FUNC> 
+<FUNC> ::= <VARNUM> "{" <INSTRCLST>
+<VAR> ::= [A-Z] | [a-z]
+<VARNUM> ::= number | <VAR>
+<SET> ::= "SET" <VAR> ":=" <POLISH>
+<POLISH> ::= <OP><POLISH> | <VARNUM><POLISH> | ";"
+<OP> ::= "+" | "-" | "*" | "/"
+
+
+Example program with new functionality:
+
+{
+   DO A FROM 1 TO 50 {
+      FD A
+      RT 30
+      DO B FROM 1 TO 8 {
+         SET C := A 5 / ;
+         FD C
+         JUMP func
+         LT 45
+      }      
+   }
+}
+
+func {
+   FD 100
+   RT 60
+   JUMP func2
+}
+
+func2 {
+   DO A FROM 1 TO 20 {
+      SET cake := A ;
+      FD cake
+      LT 45
+   }
+}
+
+
+  

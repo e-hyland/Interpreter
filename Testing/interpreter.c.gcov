@@ -1,0 +1,882 @@
+        -:    0:Source:interpreter.c
+        -:    0:Graph:interpreter.gcno
+        -:    0:Data:interpreter.gcda
+        -:    0:Runs:1
+        -:    0:Programs:1
+        -:    1:#include <stdio.h>
+        -:    2:#include <stdlib.h>
+        -:    3:#include <string.h>
+        -:    4:#include <ctype.h>
+        -:    5:#include <math.h>
+        -:    6:#include "neillsdl2.h"
+        -:    7:#include "interpreter.h"
+        -:    8:
+        -:    9:/*Parse and interpret turtle program according to Turtle Grammar rules.
+        -:   10:Output via SDL.*/
+        -:   11:
+function main called 1 returned 100% blocks executed 85%
+        1:   12:int main(int argc, char **argv)
+        -:   13:{
+        -:   14:   FILE *fp=NULL;
+        -:   15:   Prog *ptr=NULL; 
+        -:   16:   SDL_Simplewin sw;
+        1:   17:   Neill_SDL_Init(&sw);
+call    0 returned 100%
+        1:   18:   Neill_SDL_SetDrawColour(&sw,WHITE, WHITE,WHITE);
+call    0 returned 100%
+        1:   19:   ptr=malloc(sizeof(Prog));
+        1:   20:   N_ASSERT(ptr==NULL, "Error.\n");
+branch  0 taken 0% (fallthrough)
+branch  1 taken 100%
+call    2 never executed
+        -:   21: 
+        1:   22:   fp=openfile(fp, argc, argv);
+call    0 returned 100%
+        1:   23:   initialise(ptr);
+call    0 returned 100%
+        1:   24:   ptr->lw=readfile(fp, ptr); /*Set last word int to final word read in*/
+call    0 returned 100%
+        1:   25:   ptr->cw=0;/*Set current word to beginning of prog*/
+        1:   26:   openbracket(ptr);/*Check file begins with open bracket*/
+call    0 returned 100%
+        1:   27:   instrclist(ptr, sw);
+call    0 returned 100%
+        1:   28:   freewords(ptr);
+call    0 returned 100%
+        1:   29:   atexit(SDL_Quit);
+call    0 returned 100%
+        1:   30:   return 0;
+        -:   31:}
+        -:   32:
+function openfile called 1 returned 100% blocks executed 50%
+        1:   33:FILE *openfile(FILE *fp, int argc, char **argv)
+        -:   34:{
+        1:   35:  if (argc==NUMFILES){
+branch  0 taken 100% (fallthrough)
+branch  1 taken 0%
+        1:   36:      if ((fp = fopen(argv[1], "r")) == NULL){
+call    0 returned 100%
+branch  1 taken 0% (fallthrough)
+branch  2 taken 100%
+    #####:   37:         fprintf(stderr, "Error, please enter valid file name.\n");
+    #####:   38:         exit(1);
+call    0 never executed
+        -:   39:      }
+        -:   40:  }
+        -:   41:  else {
+    #####:   42:     fprintf(stderr, "Error, please enter valid file name.\n");
+    #####:   43:     exit(1);
+call    0 never executed
+        -:   44:   }
+        1:   45:   return fp;
+        -:   46:}
+        -:   47:
+function readfile called 1 returned 100% blocks executed 100%
+        1:   48:int readfile(FILE *fp, Prog *ptr)
+        -:   49:{
+        -:   50:   char str[WRDLEN];
+        -:   51:   int nsize=START_SIZE;
+        -:   52:
+       35:   53:   while (fscanf(fp, "%s", str)!=EOF){
+call    0 returned 100%
+branch  1 taken 97%
+branch  2 taken 3% (fallthrough)
+       33:   54:      str[strlen(str)+1] = '\0';
+       33:   55:      if (ptr->cw>(nsize*PERC)){ /*If no. of words is > 80% of array size, enlarge array*/
+branch  0 taken 9% (fallthrough)
+branch  1 taken 91%
+        3:   56:         nsize=nsize+START_SIZE;/*Increase size of array*/
+        3:   57:         enlarge_array(ptr, nsize);
+call    0 returned 100%
+        -:   58:      }
+       33:   59:      ptr->wds[ptr->cw]=malloc(sizeof(char)*WRDLEN);
+       33:   60:      strcpy(ptr->wds[ptr->cw], str);
+       33:   61:      ptr->cw++;
+        -:   62:   }
+        1:   63:   fclose(fp);
+call    0 returned 100%
+        1:   64:   return (ptr->cw-1);
+        -:   65:}
+        -:   66:/*Copies to temp array, freeing ptr->wds*/
+function enlarge_array called 3 returned 100% blocks executed 75%
+        3:   67:void enlarge_array(Prog *ptr, int nsize)
+        -:   68:{
+        -:   69:   int i;
+        3:   70:   char **temparray=malloc(sizeof(char *)*ptr->cw);
+        3:   71:   N_ASSERT(temparray==NULL, "Error.\n");
+branch  0 taken 100% (fallthrough)
+branch  1 taken 0%
+call    2 never executed
+        -:   72:
+       51:   73:   for (i=0;i<(ptr->cw);i++){
+branch  0 taken 94%
+branch  1 taken 6% (fallthrough)
+       51:   74:      temparray[i]=malloc(sizeof(char)*WRDLEN);
+       51:   75:      strcpy(temparray[i], ptr->wds[i]);
+       51:   76:      free(ptr->wds[i]);
+        -:   77:   }
+        3:   78:   free(ptr->wds);
+        3:   79:   ptr->wds=NULL;
+        3:   80:   copy_array(ptr, temparray, nsize); 
+call    0 returned 100%
+        3:   81:}
+        -:   82:/*Copies back to ptr->wds after mallocing a larger space, frees temp array*/
+function copy_array called 3 returned 100% blocks executed 71%
+        3:   83:void copy_array(Prog *ptr, char **temparray, int nsize)
+        -:   84:{
+        -:   85:   int i;
+        3:   86:   ptr->wds=(char **)malloc(sizeof(char *)*nsize);
+        3:   87:   N_ASSERT(ptr->wds==NULL, "Error.\n");
+branch  0 taken 100% (fallthrough)
+branch  1 taken 0%
+call    2 never executed
+        -:   88:
+       51:   89:   for (i=0;i<ptr->cw;i++){
+branch  0 taken 94%
+branch  1 taken 6% (fallthrough)
+       51:   90:      ptr->wds[i]=malloc(sizeof(char)*WRDLEN);
+       51:   91:      strcpy(ptr->wds[i], temparray[i]);
+       51:   92:      free(temparray[i]);
+        -:   93:   }
+        3:   94:   free(temparray);
+        -:   95:   temparray=NULL;
+        3:   96:}
+        -:   97:
+function openbracket called 52 returned 100% blocks executed 57%
+       52:   98:void openbracket(Prog *ptr)
+        -:   99:{
+       52:  100:   if (strcmp(ptr->wds[ptr->cw], "{")!=0){
+branch  0 taken 100% (fallthrough)
+branch  1 taken 0%
+branch  2 taken 0% (fallthrough)
+branch  3 taken 100%
+    #####:  101:      freewords(ptr);
+call    0 never executed
+    #####:  102:      fprintf(stderr, "No opening bracket.\n");
+    #####:  103:      exit(1);
+call    0 never executed
+        -:  104:   }
+       52:  105:   ptr->cw++;
+       52:  106:}
+        -:  107:
+function initialise called 1 returned 100% blocks executed 71%
+        1:  108:void initialise(Prog *ptr)
+        -:  109:{
+        -:  110:   int i;
+        1:  111:   ptr->cw=0;
+        1:  112:   ptr->degrees=0;
+        1:  113:   ptr->wds=(char **)malloc(sizeof(char *)*START_SIZE);
+        1:  114:   N_ASSERT(ptr->wds==NULL, "Error.\n");
+branch  0 taken 100% (fallthrough)
+branch  1 taken 0%
+call    2 never executed
+        -:  115:
+       26:  116:   for (i=0;i<ALPHABET;i++){ /*Set all variables to 0*/
+branch  0 taken 96%
+branch  1 taken 4% (fallthrough)
+       26:  117:      ptr->vars[i]=0;
+        -:  118:   }
+        1:  119:   ptr->x2=START_X; /*Set all coordinates to middle of window*/
+        1:  120:   ptr->y2=START_Y;
+        1:  121:   ptr->x=START_X;
+        1:  122:   ptr->y=START_Y;
+        1:  123:}
+        -:  124:
+function draw_line called 450 returned 100% blocks executed 100%
+      450:  125:void draw_line(Prog *ptr, SDL_Simplewin sw)
+        -:  126:{
+        -:  127:   /*Draw line from (x2, y2) to (x, y)*/
+      450:  128:   Neill_SDL_Events(&sw);
+call    0 returned 100%
+      450:  129:   if (!sw.finished){
+branch  0 taken 100% (fallthrough)
+branch  1 taken 0%
+      450:  130:      SDL_Delay(MILLISECONDDELAY);
+call    0 returned 100%
+      450:  131:      SDL_RenderDrawLine(sw.renderer, ptr->x2, ptr->y2, ptr->x, ptr->y);
+call    0 returned 100%
+      450:  132:      SDL_RenderPresent(sw.renderer);
+call    0 returned 100%
+      450:  133:      SDL_UpdateWindowSurface(sw.win); 
+call    0 returned 100%
+      450:  134:      ptr->x2=ptr->x; 
+      450:  135:      ptr->y2=ptr->y;
+        -:  136:   }
+      450:  137:}
+        -:  138:
+function instrclist called 1802 returned 100% blocks executed 73%
+     1802:  139:int instrclist(Prog *ptr, SDL_Simplewin sw)
+        -:  140:{
+     1802:  141:   if (ptr->cw>ptr->lw){ /*If currentword>lastword, program does not have ending close bracket*/
+branch  0 taken 0% (fallthrough)
+branch  1 taken 100%
+    #####:  142:      fprintf(stderr, "No closing bracket.\n");
+    #####:  143:      freewords(ptr);
+call    0 never executed
+    #####:  144:      exit(1);
+call    0 never executed
+        -:  145:   }
+     1802:  146:   if (strcmp(ptr->wds[ptr->cw], "}")==0){
+branch  0 taken 25% (fallthrough)
+branch  1 taken 75%
+branch  2 taken 75% (fallthrough)
+branch  3 taken 25%
+        -:  147:      return 1;/*Exit recursive loop on }*/
+        -:  148:   }
+     1351:  149:   instruction(ptr, sw);
+call    0 returned 100%
+     1351:  150:   ptr->cw++;
+     1351:  151:   instrclist(ptr, sw);
+call    0 returned 100%
+     1351:  152:   return 1;
+        -:  153:}
+        -:  154:/*Check valid instruction*/
+function instruction called 1351 returned 100% blocks executed 88%
+     1351:  155:int instruction(Prog *ptr, SDL_Simplewin sw)
+        -:  156:{
+     1351:  157:   if (strcmp(ptr->wds[ptr->cw], "DO")==0){
+branch  0 taken 4% (fallthrough)
+branch  1 taken 96%
+branch  2 taken 100% (fallthrough)
+branch  3 taken 0%
+branch  4 taken 4% (fallthrough)
+branch  5 taken 96%
+       51:  158:      ptr->cw++;
+       51:  159:      doloop(ptr, sw);
+call    0 returned 100%
+       51:  160:      return 1;
+        -:  161:   }
+     1300:  162:   if (strcmp(ptr->wds[ptr->cw], "FD")==0){
+branch  0 taken 35% (fallthrough)
+branch  1 taken 65%
+branch  2 taken 100% (fallthrough)
+branch  3 taken 0%
+branch  4 taken 35% (fallthrough)
+branch  5 taken 65%
+      450:  163:      ptr->cw++;
+      450:  164:      move_forward(ptr, sw);
+call    0 returned 100%
+      450:  165:      return 1;
+        -:  166:   }
+     1700:  167:   if ((strcmp(ptr->wds[ptr->cw], "LT")==0)||
+branch  0 taken 0% (fallthrough)
+branch  1 taken 100%
+branch  2 never executed
+branch  3 never executed
+branch  4 taken 100% (fallthrough)
+branch  5 taken 0%
+branch  6 taken 53% (fallthrough)
+branch  7 taken 47%
+      850:  168:      (strcmp(ptr->wds[ptr->cw], "RT")==0)){
+branch  0 taken 53% (fallthrough)
+branch  1 taken 47%
+branch  2 taken 100% (fallthrough)
+branch  3 taken 0%
+      450:  169:      ptr->cw++;
+      450:  170:      total_degrees(ptr);
+call    0 returned 100%
+      450:  171:      return 1;
+        -:  172:   }
+      400:  173:   if (strcmp(ptr->wds[ptr->cw], "SET")==0){
+branch  0 taken 100% (fallthrough)
+branch  1 taken 0%
+branch  2 taken 100% (fallthrough)
+branch  3 taken 0%
+branch  4 taken 100% (fallthrough)
+branch  5 taken 0%
+branch  6 taken 100% (fallthrough)
+branch  7 taken 0%
+      400:  174:      ptr->cw++;
+      400:  175:      set_var(ptr);
+call    0 returned 100%
+      400:  176:      return 1;
+        -:  177:   }
+        -:  178:   else {
+    #####:  179:      fprintf(stderr, "Invalid command\n.");
+    #####:  180:      exit_prog(ptr);
+call    0 never executed
+        -:  181:   }
+        -:  182:   return 0;
+        -:  183:}
+        -:  184:
+function total_degrees called 450 returned 100% blocks executed 67%
+      450:  185:int total_degrees(Prog *ptr)
+        -:  186:{
+        -:  187:   float val;
+      450:  188:   val=variable(ptr);/*Check variable is valid and retrieve value*/
+call    0 returned 100%
+        -:  189:
+      450:  190:   if (strcmp(ptr->wds[ptr->cw-1], "LT")==0){
+branch  0 taken 0% (fallthrough)
+branch  1 taken 100%
+branch  2 never executed
+branch  3 never executed
+branch  4 taken 0% (fallthrough)
+branch  5 taken 100%
+        -:  191:      left_turn(ptr, val);
+        -:  192:      return 1;
+        -:  193:   }
+      450:  194:   if (strcmp(ptr->wds[ptr->cw-1], "RT")==0){
+branch  0 taken 100% (fallthrough)
+branch  1 taken 0%
+branch  2 taken 100% (fallthrough)
+branch  3 taken 0%
+branch  4 taken 100% (fallthrough)
+branch  5 taken 0%
+        -:  195:      right_turn(ptr, val);
+        -:  196:   }
+        -:  197:   return 1;
+        -:  198:}
+        -:  199:
+        -:  200:/*Calculate angle of movement, ensuring degrees<360*/
+function left_turn called 0 returned 0% blocks executed 0%
+    #####:  201:int left_turn(Prog *ptr, float val)
+        -:  202:{
+    #####:  203:   if (val>ptr->degrees){
+branch  0 never executed
+branch  1 never executed
+branch  2 never executed
+branch  3 never executed
+    #####:  204:      ptr->degrees = CIRCLE-(val-ptr->degrees);
+    #####:  205:      return 1;
+        -:  206:   }
+        -:  207:   else {     
+    #####:  208:      ptr->degrees = ptr->degrees-(val);
+    #####:  209:      return 1;
+        -:  210:   }
+        -:  211:}
+        -:  212:
+        -:  213:/*Calculate angle of movement, ensuring degrees<360*/
+function right_turn called 0 returned 0% blocks executed 0%
+    #####:  214:int right_turn(Prog *ptr, float val)
+        -:  215:{
+      450:  216:   if ((val+ptr->degrees)>CIRCLE){
+branch  0 never executed
+branch  1 never executed
+branch  2 taken 12% (fallthrough)
+branch  3 taken 88%
+       54:  217:      ptr->degrees = (val+ptr->degrees)-CIRCLE;
+       54:  218:      while (ptr->degrees>CIRCLE){
+branch  0 never executed
+branch  1 never executed
+branch  2 taken 0%
+branch  3 taken 100%
+    #####:  219:         ptr->degrees-=CIRCLE;
+        -:  220:      }
+        -:  221:      return 1;
+        -:  222:   }
+        -:  223:   else {
+      396:  224:      ptr->degrees = ptr->degrees+(val);
+    #####:  225:      return 1;
+        -:  226:   }
+        -:  227:}
+        -:  228:/*Convert degrees to radians, set new coordinates and draw line*/
+function move_forward called 450 returned 100% blocks executed 100%
+      450:  229:void move_forward(Prog *ptr, SDL_Simplewin sw)
+        -:  230:{
+        -:  231:   float radians, val;
+        -:  232:   int x, y;
+        -:  233:
+      450:  234:   radians=ptr->degrees*(M_PI/RADIANS); 
+      450:  235:   val=variable(ptr);
+call    0 returned 100%
+      450:  236:   x=(int)(val)*cos(radians);
+      450:  237:   y=(int)(val)*sin(radians);
+      450:  238:   ptr->x=ptr->x+x;/*Set new x and y values*/
+      450:  239:   ptr->y=ptr->y+y;
+      450:  240:   draw_line(ptr, sw);
+call    0 returned 100%
+      450:  241:}
+        -:  242:
+function doloop called 51 returned 100% blocks executed 86%
+       51:  243:int doloop(Prog *ptr, SDL_Simplewin sw)
+        -:  244:{
+        -:  245:   float start=0, finish=0;
+       51:  246:   char c=ptr->wds[ptr->cw][0];
+        -:  247:
+       51:  248:   is_alpha(ptr);/*Check valid variable*/
+call    0 returned 100%
+       51:  249:   ptr->cw++;
+       51:  250:   start=start_loop(ptr, start);
+call    0 returned 100%
+       51:  251:   ptr->vars[(c-'A')]=start;/*Assign variable starting number*/
+       51:  252:   ptr->cw++;
+       51:  253:   finish=end_loop(ptr, finish);
+call    0 returned 100%
+       51:  254:   if (start<=finish){ /*If loop increasing*/
+branch  0 taken 100% (fallthrough)
+branch  1 taken 0%
+       51:  255:      loop_thru(c, finish, ptr, sw, 1);
+call    0 returned 100%
+        -:  256:   }
+        -:  257:   else { /*If loop decreasing*/
+    #####:  258:      loop_thru(c, finish, ptr, sw, -1);
+call    0 never executed
+        -:  259:   }
+       51:  260:   return 1;
+        -:  261:}
+        -:  262:
+function start_loop called 51 returned 100% blocks executed 60%
+       51:  263:float start_loop(Prog *ptr, float start)
+        -:  264:{
+       51:  265:   if (strcmp(ptr->wds[ptr->cw], "FROM")!=0){
+branch  0 taken 0% (fallthrough)
+branch  1 taken 100%
+    #####:  266:      fprintf(stderr, "Require 'FROM'\n.");
+    #####:  267:      exit_prog(ptr);
+call    0 never executed
+        -:  268:   }
+       51:  269:   ptr->cw++;
+       51:  270:   start=variable(ptr);/*Get starting number for doloop*/
+call    0 returned 100%
+       51:  271:   return start;
+        -:  272:}
+        -:  273:
+function end_loop called 51 returned 100% blocks executed 78%
+       51:  274:float end_loop(Prog *ptr, float finish)
+        -:  275:{
+       51:  276:   if (strcmp(ptr->wds[ptr->cw], "TO")!=0){
+branch  0 taken 100% (fallthrough)
+branch  1 taken 0%
+branch  2 taken 100% (fallthrough)
+branch  3 taken 0%
+branch  4 taken 0% (fallthrough)
+branch  5 taken 100%
+    #####:  277:      fprintf(stderr, "Require 'TO'\n.");
+    #####:  278:      exit_prog(ptr);
+call    0 never executed
+        -:  279:   }
+       51:  280:   ptr->cw++;
+       51:  281:   finish=variable(ptr);/*Get ending number for doloop*/
+call    0 returned 100%
+       51:  282:   ptr->cw++;
+       51:  283:   openbracket(ptr);/*Check for open bracket before loop*/
+call    0 returned 100%
+       51:  284:   return finish;
+        -:  285:}
+        -:  286:/*If loop is decreasing (eg. from 8 to 1), 
+        -:  287:while loop becomes: (-1*val)<finish+(-1).
+        -:  288:Otherwise while loop is: (1*val)<finish+1. */
+function loop_thru called 51 returned 100% blocks executed 70%
+       51:  289:void loop_thru(char c, int finish, Prog *ptr, SDL_Simplewin sw, int s)
+        -:  290:{
+       51:  291:   int begin=ptr->cw, end=0;
+       51:  292:   ptr->x2=ptr->x;/*Set starting coordinates before entering doloop*/
+       51:  293:   ptr->y2=ptr->y;
+        -:  294:/*While variable is less than endpoint of doloop*/
+      552:  295:   while ((s*ptr->vars[(c-'A')])<finish+s){
+branch  0 taken 90%
+branch  1 taken 10% (fallthrough)
+      450:  296:      instrclist(ptr, sw);
+call    0 returned 100%
+      450:  297:      if (sw.finished){
+branch  0 taken 0% (fallthrough)
+branch  1 taken 100%
+    #####:  298:         freewords(ptr);
+call    0 never executed
+    #####:  299:         atexit(SDL_Quit);
+call    0 never executed
+    #####:  300:         exit(1);
+call    0 never executed
+        -:  301:      }
+      450:  302:      Neill_SDL_Events(&sw);
+call    0 returned 100%
+      450:  303:      end=ptr->cw;/*Track end of doloop*/
+      450:  304:      ptr->vars[(c-'A')]+=s;/*Update variable*/
+      450:  305:      ptr->cw=begin;/*Jump to top of doloop*/
+        -:  306:   }
+       51:  307:   ptr->cw=end;
+       51:  308:}
+        -:  309:
+function set_var called 400 returned 100% blocks executed 78%
+      400:  310:int set_var(Prog *ptr)
+        -:  311:{
+        -:  312:   Stack s;
+      400:  313:   char c=ptr->wds[ptr->cw][0];
+        -:  314:
+      400:  315:   is_alpha(ptr); /*Check valid variable*/
+call    0 returned 100%
+      400:  316:   ptr->cw++;
+      400:  317:   if (strcmp(ptr->wds[ptr->cw], ":=")!=0){
+branch  0 taken 100% (fallthrough)
+branch  1 taken 0%
+branch  2 taken 100% (fallthrough)
+branch  3 taken 0%
+branch  4 taken 0% (fallthrough)
+branch  5 taken 100%
+    #####:  318:      fprintf(stderr, "Require: :=\n");
+    #####:  319:      exit_prog(ptr);
+call    0 never executed
+        -:  320:   }
+      400:  321:   ptr->cw++;
+      400:  322:   buildstack(c, ptr, &s);
+call    0 returned 100%
+      400:  323:   return 1;
+        -:  324:}
+        -:  325:/*Initialise stack to perform reverse polish, pop final no.*/
+function buildstack called 400 returned 100% blocks executed 80%
+      400:  326:void buildstack(char c, Prog *ptr, Stack *s)
+        -:  327:{
+        -:  328:   float val;
+        -:  329:
+      400:  330:   s->tp = (Elem *)calloc(1, sizeof(Elem));
+      400:  331:   N_ASSERT(s->tp==NULL, "Error\n");
+branch  0 taken 0% (fallthrough)
+branch  1 taken 100%
+call    2 never executed
+      400:  332:   s->tp->prev=NULL;
+        -:  333:
+      400:  334:   polish(ptr, s);
+call    0 returned 100%
+      400:  335:   check_stack(ptr, s);
+call    0 returned 100%
+      400:  336:   val=Pop(s, ptr);
+call    0 returned 100%
+      400:  337:   ptr->vars[(c-'A')]=val;
+        -:  338:   freestack(s);
+        -:  339:   s=NULL;
+      400:  340:}
+        -:  341:/*Check that there is only one variable on stack for final pop*/
+function check_stack called 400 returned 100% blocks executed 56%
+      400:  342:void check_stack(Prog *ptr, Stack *s)
+        -:  343:{
+        -:  344:   int cnt=0;
+      400:  345:   Elem *c=s->tp;
+        -:  346:
+     1200:  347:   while (c->prev!=NULL){
+branch  0 taken 50%
+branch  1 taken 50% (fallthrough)
+      400:  348:      cnt++;
+        -:  349:      c=c->prev;
+        -:  350:   }
+      400:  351:   if (cnt!=1){
+branch  0 taken 0% (fallthrough)
+branch  1 taken 100%
+    #####:  352:      fprintf(stderr, "Incorrect polish.\n");
+        -:  353:      freestack(s);
+    #####:  354:      exit_prog(ptr);
+call    0 never executed
+        -:  355:   }
+      400:  356:}
+        -:  357:
+function Push called 1200 returned 100% blocks executed 50%
+     1200:  358:void Push(Stack *s, float n)
+        -:  359:{
+        -:  360:   Elem *e;
+     1200:  361:   e = (Elem *)calloc(1, sizeof(Elem));
+     1200:  362:   N_ASSERT(e==NULL, "Error\n");
+branch  0 taken 0% (fallthrough)
+branch  1 taken 100%
+call    2 never executed
+        -:  363:
+     1200:  364:   e->prev = s->tp;
+     1200:  365:   s->tp->i = n;
+     1200:  366:   s->tp = e;   
+     1200:  367:}
+        -:  368:
+function Pop called 1200 returned 100% blocks executed 50%
+     1200:  369:float Pop(Stack *s, Prog *ptr)
+        -:  370:{
+     1200:  371:   if (s->tp->prev!=NULL){
+branch  0 taken 100% (fallthrough)
+branch  1 taken 0%
+     1200:  372:      s->tp = s->tp->prev;
+     1200:  373:      return s->tp->i;
+        -:  374:   }
+        -:  375:   else {
+    #####:  376:      fprintf(stderr, "Insufficient operands.\n");
+        -:  377:      freestack(s); 
+    #####:  378:      exit_prog(ptr);
+        -:  379:      return 0;
+        -:  380:   } 
+        -:  381:}
+        -:  382:
+function polish called 1600 returned 100% blocks executed 67%
+     1600:  383:float polish(Prog *ptr, Stack *s)
+        -:  384:{
+     1600:  385:   char c=ptr->wds[ptr->cw][0];
+        -:  386:
+     1600:  387:   if (strcmp(ptr->wds[ptr->cw], ";")==0){
+branch  0 taken 25% (fallthrough)
+branch  1 taken 75%
+branch  2 taken 75% (fallthrough)
+branch  3 taken 25%
+        -:  388:      return 1; /*Base case ";"*/
+        -:  389:   }
+     1200:  390:   if (operator_var(ptr, c, s)){/*Check if valid operator or variable*/
+call    0 returned 100%
+branch  1 taken 100% (fallthrough)
+branch  2 taken 0%
+     1200:  391:      ptr->cw = ptr->cw+1;
+     1200:  392:      polish(ptr, s);
+call    0 returned 100%
+        -:  393:   }
+        -:  394:   else { 
+    #####:  395:      fprintf(stderr, "Invalid symbol in polish equation.\n");
+        -:  396:      freestack(s);
+    #####:  397:      exit_prog(ptr);
+call    0 never executed
+        -:  398:   }
+     1200:  399:   return 0;
+        -:  400:}
+        -:  401:
+function operator_var called 1200 returned 100% blocks executed 100%
+     1200:  402:int operator_var(Prog *ptr, char c, Stack *s)
+        -:  403:{
+        -:  404:   float val; 
+        -:  405:
+     2400:  406:   if ((strlen(ptr->wds[ptr->cw])==1)&& /*Ensure *5 not accepted*/
+branch  0 taken 100% (fallthrough)
+branch  1 taken 0%
+branch  2 taken 100% (fallthrough)
+branch  3 taken 0%
+     2400:  407:      ((c=='+')||(c=='-')||(c=='/')||(c=='*'))){
+branch  0 taken 33% (fallthrough)
+branch  1 taken 67%
+      400:  408:      do_maths(s, c, ptr);
+call    0 returned 100%
+      400:  409:      return 1;
+        -:  410:   }
+        -:  411:   else {
+      800:  412:      val=variable(ptr);
+call    0 returned 100%
+      800:  413:      Push(s, val);
+call    0 returned 100%
+      800:  414:      return 1;
+        -:  415:   }
+        -:  416:   return 0;
+        -:  417:}
+        -:  418:/*Perform operator on previous two operands. 
+        -:  419:If there is insufficient operands, pop will error.*/
+function do_maths called 400 returned 100% blocks executed 27%
+      400:  420:void do_maths(Stack *s, char c, Prog *ptr)
+        -:  421:{
+        -:  422:   float op1, op2;
+        -:  423:
+      400:  424:   switch (c){
+branch  0 taken 0%
+branch  1 taken 0%
+branch  2 taken 0%
+branch  3 taken 100%
+branch  4 taken 0%
+        -:  425:      case '+':
+    #####:  426:         Push(s, (Pop(s, ptr)+Pop(s, ptr)));
+call    0 never executed
+call    1 never executed
+call    2 never executed
+    #####:  427:         break;
+        -:  428:      case '-':
+    #####:  429:         Push(s, (Pop(s, ptr)-Pop(s, ptr)));
+call    0 never executed
+call    1 never executed
+call    2 never executed
+    #####:  430:         break;
+        -:  431:      case '*':
+    #####:  432:         Push(s, (Pop(s, ptr)*Pop(s, ptr)));
+call    0 never executed
+call    1 never executed
+call    2 never executed
+    #####:  433:         break;
+        -:  434:      case '/':
+      400:  435:         op1 = Pop(s, ptr);
+call    0 returned 100%
+      400:  436:         op2 = Pop(s, ptr);
+call    0 returned 100%
+      400:  437:         Push(s, (op2/op1));
+call    0 returned 100%
+      400:  438:         break;
+        -:  439:      default:
+    #####:  440:         fprintf(stderr, "Invalid operator.\n");
+        -:  441:         freestack(s);
+    #####:  442:         exit_prog(ptr);
+call    0 never executed
+        -:  443:   }
+      400:  444:}
+        -:  445:
+function variable called 1802 returned 100% blocks executed 73%
+     1802:  446:float variable(Prog *ptr)
+        -:  447:{
+     1802:  448:   char c=ptr->wds[ptr->cw][0];
+        -:  449:   float val;
+        -:  450:
+     1802:  451:   if (isupper(c)){
+call    0 returned 100%
+branch  1 taken 47% (fallthrough)
+branch  2 taken 53%
+      850:  452:      is_alpha(ptr);
+call    0 returned 100%
+      850:  453:      val=ptr->vars[(c-'A')];/*Retrieve value of variable*/
+      850:  454:      return val;
+        -:  455:   }
+      952:  456:   if (isdigit(c)||(c=='.')||(c=='-')){
+branch  0 taken 0% (fallthrough)
+branch  1 taken 100%
+branch  2 never executed
+branch  3 never executed
+      952:  457:      val=is_number(ptr, c);
+call    0 returned 100%
+      952:  458:      return val;
+        -:  459:   }
+        -:  460:   else {
+    #####:  461:      fprintf(stderr, "Invalid variable/No semi-colon after equation\n"); 
+    #####:  462:      exit_prog(ptr);
+call    0 never executed
+        -:  463:   }
+        -:  464:   return 0;
+        -:  465:}
+        -:  466:
+function is_number called 952 returned 100% blocks executed 55%
+      952:  467:float is_number(Prog *ptr, char c)
+        -:  468:{
+        -:  469:   float val=0;
+        -:  470:
+      952:  471:   if ((c=='-')||(isdigit(c))){
+branch  0 taken 100% (fallthrough)
+branch  1 taken 0%
+call    2 returned 100%
+branch  3 taken 100% (fallthrough)
+branch  4 taken 0%
+      952:  472:      val=is_negative(ptr, c);
+call    0 returned 100%
+      952:  473:      return val;
+        -:  474:   }
+    #####:  475:   if (c=='.'){
+branch  0 never executed
+branch  1 never executed
+    #####:  476:      val=is_float(ptr,c);
+call    0 never executed
+    #####:  477:      return val;
+        -:  478:   }
+        -:  479:   else {
+    #####:  480:      fprintf(stderr, "Invalid variable/No semi-colon after equation\n"); 
+    #####:  481:      exit_prog(ptr); 
+call    0 never executed
+        -:  482:   }  
+        -:  483:   return val;
+        -:  484:}
+        -:  485:
+function is_negative called 952 returned 100% blocks executed 64%
+      952:  486:float is_negative(Prog *ptr, char c)
+        -:  487:{
+        -:  488:   int i=1, cnt=0;
+        -:  489:   float val;
+        -:  490:
+     2355:  491:   while (ptr->wds[ptr->cw][i]!='\0'){
+branch  0 taken 32%
+branch  1 taken 68% (fallthrough)
+        -:  492:      c = ptr->wds[ptr->cw][i];
+      451:  493:      if (c=='.'){
+branch  0 taken 0% (fallthrough)
+branch  1 taken 100%
+    #####:  494:         cnt++;/*If there is more than one '.', invalid variable*/
+        -:  495:      }
+      451:  496:      if ((!isdigit(c))&&(c!='.')){
+call    0 returned 100%
+branch  1 taken 0% (fallthrough)
+branch  2 taken 100%
+branch  3 never executed
+branch  4 never executed
+    #####:  497:         fprintf(stderr, "Invalid variable/No semi-colon after equation\n"); 
+    #####:  498:          exit_prog(ptr);
+call    0 never executed
+        -:  499:      }
+      451:  500:      i++;
+        -:  501:   }
+      952:  502:   if (cnt>1){
+branch  0 taken 0% (fallthrough)
+branch  1 taken 100%
+    #####:  503:      exit_prog(ptr);
+call    0 never executed
+        -:  504:   }
+      952:  505:   val=atof(ptr->wds[ptr->cw]);/*Convert string to float*/
+      952:  506:   return val;
+        -:  507:}
+        -:  508:
+function is_float called 0 returned 0% blocks executed 0%
+    #####:  509:float is_float(Prog *ptr, char c)
+        -:  510:{
+        -:  511:  int i=1;
+        -:  512:  float val;
+        -:  513:   
+    #####:  514:   while (ptr->wds[ptr->cw][i]!='\0'){
+branch  0 never executed
+branch  1 never executed
+        -:  515:      c = ptr->wds[ptr->cw][i];
+    #####:  516:      if (!isdigit(c)){
+call    0 never executed
+branch  1 never executed
+branch  2 never executed
+    #####:  517:         fprintf(stderr, "Invalid variable/No semi-colon after equation\n"); 
+    #####:  518:         exit_prog(ptr);
+call    0 never executed
+        -:  519:      }
+    #####:  520:      i++;
+        -:  521:   }
+    #####:  522:   val=atof(ptr->wds[ptr->cw]);
+    #####:  523:   return val;
+        -:  524:}
+        -:  525:
+function is_alpha called 1301 returned 100% blocks executed 67%
+     1301:  526:void is_alpha(Prog *ptr)
+        -:  527:{
+     1301:  528:   char c=ptr->wds[ptr->cw][0];
+        -:  529:
+     1301:  530:   if (!isupper(c)||(strlen(ptr->wds[ptr->cw])!=1)){
+call    0 returned 100%
+branch  1 taken 100% (fallthrough)
+branch  2 taken 0%
+branch  3 taken 0% (fallthrough)
+branch  4 taken 100%
+    #####:  531:      fprintf(stderr, "Invalid variable/No semi-colon after equation\n");
+    #####:  532:      exit_prog(ptr);
+call    0 never executed
+        -:  533:   }
+     1301:  534:}
+        -:  535:
+function freewords called 1 returned 100% blocks executed 100%
+        1:  536:void freewords(Prog *ptr)
+        -:  537:{
+        -:  538:   int i=0;
+       35:  539:   while (i<ptr->lw+1){
+branch  0 taken 97%
+branch  1 taken 3% (fallthrough)
+       33:  540:      free(ptr->wds[i]);
+       33:  541:      i++;
+        -:  542:   }
+        1:  543:   free(ptr->wds);
+        1:  544:   free(ptr);
+        1:  545:}
+        -:  546:
+function exit_prog called 0 returned 0% blocks executed 0%
+    #####:  547:void exit_prog(Prog *ptr)
+        -:  548:{
+    #####:  549:   atexit(SDL_Quit);
+call    0 never executed
+    #####:  550:   fprintf(stderr, "'%s %s %s': INVALID. Invalid program.\n", 
+    #####:  551:   ptr->wds[ptr->cw-1], ptr->wds[ptr->cw], ptr->wds[ptr->cw+1]);
+    #####:  552:   freewords(ptr);
+call    0 never executed
+    #####:  553:   exit(1);
+        -:  554:}
+        -:  555:
+function freestack called 0 returned 0% blocks executed 0%
+    #####:  556:void freestack(Stack *s)
+        -:  557:{
+      800:  558:   while (s->tp!= NULL){
+branch  0 never executed
+branch  1 never executed
+branch  2 never executed
+branch  3 never executed
+branch  4 never executed
+branch  5 never executed
+branch  6 never executed
+branch  7 never executed
+branch  8 never executed
+branch  9 never executed
+branch 10 taken 50%
+branch 11 taken 50% (fallthrough)
+      400:  559:      free(s->tp);
+      400:  560:      s->tp = s->tp->prev;
+        -:  561:   }
+    #####:  562:}
+        -:  563:

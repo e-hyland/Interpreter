@@ -1,0 +1,535 @@
+        -:    0:Source:parser.c
+        -:    0:Graph:parser.gcno
+        -:    0:Data:parser.gcda
+        -:    0:Runs:1
+        -:    0:Programs:1
+        -:    1:#include <stdio.h>
+        -:    2:#include <stdlib.h>
+        -:    3:#include <string.h>
+        -:    4:#include <ctype.h>
+        -:    5:#include <math.h>
+        -:    6:#include "parser.h"
+        -:    7:
+        -:    8:/*Check grammar of input program is valid with Turtle Grammar rules.
+        -:    9:Does not run program. */
+        -:   10:
+function main called 1 returned 100% blocks executed 80%
+        1:   11:int main(int argc, char **argv)
+        -:   12:{
+        -:   13:   FILE *fp=NULL;
+        -:   14:   Prog *ptr=NULL; 
+        1:   15:   ptr = malloc(sizeof(Prog));
+        1:   16:   N_ASSERT(ptr==NULL, "Error\n");
+branch  0 taken 0% (fallthrough)
+branch  1 taken 100%
+call    2 never executed
+        -:   17:
+        1:   18:   fp=openfile(fp, argc, argv);
+call    0 returned 100%
+        1:   19:   initialise(ptr);
+call    0 returned 100%
+        1:   20:   ptr->lw=readfile(fp, ptr);/*Set last word int to final word read in*/
+call    0 returned 100%
+        1:   21:   ptr->cw=0; /*Set current word to beginning of prog*/
+        1:   22:   openbracket(ptr);/*Check file begins with open bracket*/
+call    0 returned 100%
+        1:   23:   instrclist(ptr); 
+call    0 returned 100%
+        1:   24:   freewords(ptr);
+call    0 returned 100%
+        1:   25:   return 0;
+        -:   26:}
+        -:   27:
+function openfile called 1 returned 100% blocks executed 50%
+        1:   28:FILE *openfile(FILE *fp, int argc, char **argv)
+        -:   29:{
+        1:   30:  if (argc==NUMFILES){
+branch  0 taken 100% (fallthrough)
+branch  1 taken 0%
+        1:   31:      if ((fp = fopen(argv[1], "r")) == NULL){
+call    0 returned 100%
+branch  1 taken 0% (fallthrough)
+branch  2 taken 100%
+    #####:   32:         fprintf(stderr, "Error, please enter valid file name.\n");
+    #####:   33:         exit(1);
+call    0 never executed
+        -:   34:      }
+        -:   35:  }
+        -:   36:  else {
+    #####:   37:     fprintf(stderr, "Error, please enter valid file name.\n");
+    #####:   38:     exit(1);
+call    0 never executed
+        -:   39:   }
+        1:   40:   return fp;
+        -:   41:}
+        -:   42:
+function readfile called 1 returned 100% blocks executed 100%
+        1:   43:int readfile(FILE *fp, Prog *ptr)
+        -:   44:{
+        -:   45:   char str[WRDLEN];
+        -:   46:   int nsize=START_SIZE;
+        -:   47:
+       23:   48:   while (fscanf(fp, "%s", str) != EOF){
+call    0 returned 100%
+branch  1 taken 95%
+branch  2 taken 5% (fallthrough)
+       21:   49:      str[strlen(str)+1] = '\0';
+       21:   50:      if (ptr->cw > (nsize*PERC)){ /*If no. of words is > 80% of array size, enlarge array*/
+branch  0 taken 19% (fallthrough)
+branch  1 taken 81%
+        4:   51:         nsize=nsize+START_SIZE; /*Increase size of array*/
+        4:   52:         enlarge_array(ptr, nsize);
+call    0 returned 100%
+        -:   53:      }
+       21:   54:      ptr->wds[ptr->cw]=malloc(sizeof(char)*WRDLEN);
+       21:   55:      strcpy(ptr->wds[ptr->cw], str);
+       21:   56:      ptr->cw++;
+        -:   57:   }
+        1:   58:   fclose(fp);
+call    0 returned 100%
+        1:   59:   return (ptr->cw-1);
+        -:   60:}
+        -:   61:
+function initialise called 1 returned 100% blocks executed 50%
+        1:   62:void initialise(Prog *ptr)
+        -:   63:{
+        1:   64:   ptr->cw = 0;
+        1:   65:   ptr->wds= (char **)malloc(sizeof(char *)*START_SIZE);
+        1:   66:   N_ASSERT(ptr->wds==NULL, "Error.\n");
+branch  0 taken 0% (fallthrough)
+branch  1 taken 100%
+call    2 never executed
+        1:   67:}
+        -:   68:
+        -:   69:/*Copies to temp array, freeing ptr->wds*/
+function enlarge_array called 4 returned 100% blocks executed 75%
+        4:   70:void enlarge_array(Prog *ptr, int nsize)
+        -:   71:{
+        -:   72:   int i;
+        4:   73:   char **temparray=malloc(sizeof(char *)*ptr->cw);
+        4:   74:   N_ASSERT(temparray==NULL, "Error.\n");
+branch  0 taken 100% (fallthrough)
+branch  1 taken 0%
+call    2 never executed
+        -:   75:
+       44:   76:   for (i=0;i<(ptr->cw);i++){
+branch  0 taken 92%
+branch  1 taken 8% (fallthrough)
+       44:   77:      temparray[i] = malloc(sizeof(char)*WRDLEN);
+       44:   78:      strcpy(temparray[i], ptr->wds[i]);
+       44:   79:      free(ptr->wds[i]);
+        -:   80:   }
+        4:   81:   free(ptr->wds);
+        4:   82:   ptr->wds=NULL;
+        4:   83:   copy_array(ptr, temparray, nsize);   
+call    0 returned 100%
+        4:   84:}
+        -:   85:/*Copies back to ptr->wds after mallocing a larger space, frees temp array*/
+function copy_array called 4 returned 100% blocks executed 100%
+        4:   86:void copy_array(Prog *ptr, char **temparray, int nsize)
+        -:   87:{
+        -:   88:   int i;
+        4:   89:   ptr->wds=(char **)malloc(sizeof(char *)*nsize);
+        -:   90:
+       48:   91:   for (i=0;i<ptr->cw;i++){
+branch  0 taken 92%
+branch  1 taken 8% (fallthrough)
+       44:   92:      ptr->wds[i]=malloc(sizeof(char)*WRDLEN);
+       44:   93:      strcpy(ptr->wds[i], temparray[i]);
+       44:   94:      free(temparray[i]);
+        -:   95:   }
+        4:   96:   free(temparray);
+        -:   97:   temparray=NULL;
+        4:   98:}
+        -:   99:
+function openbracket called 2 returned 100% blocks executed 57%
+        2:  100:void openbracket(Prog *ptr)
+        -:  101:{
+        2:  102:   if (strcmp(ptr->wds[ptr->cw], "{")!=0){
+branch  0 taken 100% (fallthrough)
+branch  1 taken 0%
+branch  2 taken 0% (fallthrough)
+branch  3 taken 100%
+    #####:  103:      freewords(ptr);
+call    0 never executed
+    #####:  104:      fprintf(stderr, "No opening bracket.\n");
+    #####:  105:      exit(1);
+call    0 never executed
+        -:  106:   }
+        2:  107:   ptr->cw++;
+        2:  108:}
+        -:  109:
+        -:  110:
+function instrclist called 6 returned 100% blocks executed 73%
+        6:  111:int instrclist(Prog *ptr)
+        -:  112:{  
+        6:  113:   if (ptr->cw>ptr->lw){ /*If currentword>lastword, program does not have ending close bracket*/
+branch  0 taken 0% (fallthrough)
+branch  1 taken 100%
+    #####:  114:      fprintf(stderr, "No closing bracket.\n");
+    #####:  115:      freewords(ptr);
+call    0 never executed
+    #####:  116:      exit(1);
+call    0 never executed
+        -:  117:   }
+        6:  118:   if (strcmp(ptr->wds[ptr->cw], "}")==0){
+branch  0 taken 33% (fallthrough)
+branch  1 taken 67%
+branch  2 taken 67% (fallthrough)
+branch  3 taken 33%
+        -:  119:      return 1; /*Exit recursive loop on }*/
+        -:  120:   }
+        4:  121:   instruction(ptr);
+call    0 returned 100%
+        4:  122:   ptr->cw++;
+        4:  123:   instrclist(ptr); 
+call    0 returned 100%
+        4:  124:   return 1;
+        -:  125:}
+        -:  126:/*Check valid instruction*/
+function instruction called 4 returned 100% blocks executed 88%
+        4:  127:int instruction(Prog *ptr)
+        -:  128:{
+        4:  129:   if (strcmp(ptr->wds[ptr->cw], "FD")==0){
+branch  0 taken 25% (fallthrough)
+branch  1 taken 75%
+branch  2 taken 100% (fallthrough)
+branch  3 taken 0%
+branch  4 taken 25% (fallthrough)
+branch  5 taken 75%
+        1:  130:      ptr->cw++;
+        1:  131:      variable(ptr);
+call    0 returned 100%
+        1:  132:      return 1;
+        -:  133:   }
+        6:  134:   if ((strcmp(ptr->wds[ptr->cw], "LT")==0)||
+branch  0 taken 0% (fallthrough)
+branch  1 taken 100%
+branch  2 never executed
+branch  3 never executed
+branch  4 taken 100% (fallthrough)
+branch  5 taken 0%
+branch  6 taken 33% (fallthrough)
+branch  7 taken 67%
+        3:  135:      (strcmp(ptr->wds[ptr->cw], "RT")==0)){
+branch  0 taken 33% (fallthrough)
+branch  1 taken 67%
+branch  2 taken 100% (fallthrough)
+branch  3 taken 0%
+        1:  136:      ptr->cw++;
+        1:  137:      variable(ptr);
+call    0 returned 100%
+        1:  138:      return 1;
+        -:  139:   }
+        2:  140:   if (strcmp(ptr->wds[ptr->cw], "DO")==0){
+branch  0 taken 50% (fallthrough)
+branch  1 taken 50%
+branch  2 taken 100% (fallthrough)
+branch  3 taken 0%
+branch  4 taken 50% (fallthrough)
+branch  5 taken 50%
+        1:  141:      ptr->cw++;
+        1:  142:      doloop(ptr);
+call    0 returned 100%
+        1:  143:      return 1;
+        -:  144:   }
+        1:  145:   if (strcmp(ptr->wds[ptr->cw], "SET")==0){
+branch  0 taken 100% (fallthrough)
+branch  1 taken 0%
+branch  2 taken 100% (fallthrough)
+branch  3 taken 0%
+branch  4 taken 100% (fallthrough)
+branch  5 taken 0%
+branch  6 taken 100% (fallthrough)
+branch  7 taken 0%
+        1:  146:      ptr->cw++;
+        1:  147:      set_var(ptr);
+call    0 returned 100%
+        1:  148:      return 1;
+        -:  149:   }
+        -:  150:   else {
+    #####:  151:      fprintf(stderr, "Invalid command\n.");
+    #####:  152:      exit_prog(ptr);
+call    0 never executed
+        -:  153:      return 0;
+        -:  154:   }
+        -:  155:}
+        -:  156:
+function doloop called 1 returned 100% blocks executed 100%
+        1:  157:int doloop(Prog *ptr)
+        -:  158:{
+        1:  159:   is_alpha(ptr);/*Check variable is valid*/
+call    0 returned 100%
+        1:  160:   ptr->cw++;
+        1:  161:   start_loop(ptr);
+call    0 returned 100%
+        1:  162:   ptr->cw++;
+        1:  163:   end_loop(ptr);
+call    0 returned 100%
+        1:  164:   instrclist(ptr);
+call    0 returned 100%
+        1:  165:   return 1;
+        -:  166:}
+        -:  167:
+function start_loop called 1 returned 100% blocks executed 60%
+        1:  168:void start_loop(Prog *ptr)
+        -:  169:{
+        1:  170:   if (strcmp(ptr->wds[ptr->cw], "FROM")!=0){
+branch  0 taken 0% (fallthrough)
+branch  1 taken 100%
+    #####:  171:      fprintf(stderr, "Require 'FROM'\n.");
+    #####:  172:      exit_prog(ptr);
+call    0 never executed
+        -:  173:   }
+        1:  174:   ptr->cw++;
+        1:  175:   variable(ptr);
+call    0 returned 100%
+        1:  176:}
+        -:  177:
+function end_loop called 1 returned 100% blocks executed 78%
+        1:  178:void end_loop(Prog *ptr)
+        -:  179:{
+        1:  180:   if (strcmp(ptr->wds[ptr->cw], "TO")!=0){
+branch  0 taken 100% (fallthrough)
+branch  1 taken 0%
+branch  2 taken 100% (fallthrough)
+branch  3 taken 0%
+branch  4 taken 0% (fallthrough)
+branch  5 taken 100%
+    #####:  181:      fprintf(stderr, "Require 'TO'\n.");
+    #####:  182:      exit_prog(ptr);
+call    0 never executed
+        -:  183:   }
+        1:  184:   ptr->cw++;
+        1:  185:   variable(ptr);/*Check valid variable*/
+call    0 returned 100%
+        1:  186:   ptr->cw++;
+        1:  187:   openbracket(ptr); /*Check for open bracket before loop*/
+call    0 returned 100%
+        1:  188:}
+        -:  189:
+function set_var called 1 returned 100% blocks executed 78%
+        1:  190:void set_var(Prog *ptr)
+        -:  191:{
+        1:  192:   is_alpha(ptr);
+call    0 returned 100%
+        1:  193:   ptr->cw++;
+        1:  194:   if (strcmp(ptr->wds[ptr->cw], ":=")!=0){
+branch  0 taken 100% (fallthrough)
+branch  1 taken 0%
+branch  2 taken 100% (fallthrough)
+branch  3 taken 0%
+branch  4 taken 0% (fallthrough)
+branch  5 taken 100%
+    #####:  195:      fprintf(stderr, "Require: :=\n");
+    #####:  196:      exit_prog(ptr);
+call    0 never executed
+        -:  197:   }
+        1:  198:   ptr->cw++;
+        1:  199:   polish(ptr);
+call    0 returned 100%
+        1:  200:}
+        -:  201:
+function polish called 4 returned 100% blocks executed 80%
+        4:  202:int polish(Prog *ptr)
+        -:  203:{
+        4:  204:   char c=ptr->wds[ptr->cw][0];
+        -:  205:
+        4:  206:   if (strcmp(ptr->wds[ptr->cw], ";")==0){
+branch  0 taken 25% (fallthrough)
+branch  1 taken 75%
+branch  2 taken 75% (fallthrough)
+branch  3 taken 25%
+        -:  207:      return 1;
+        -:  208:   }
+        3:  209:   if (operator_var(ptr, c)){/*Check that string is operator or variable*/
+call    0 returned 100%
+branch  1 taken 100% (fallthrough)
+branch  2 taken 0%
+        3:  210:      ptr->cw = ptr->cw+1;
+        3:  211:      polish(ptr);
+call    0 returned 100%
+        -:  212:   }
+        -:  213:   else { 
+    #####:  214:      fprintf(stderr, "Invalid symbol in polish equation.\n");
+    #####:  215:      exit_prog(ptr);
+call    0 never executed
+        -:  216:   }
+        3:  217:   return 0;
+        -:  218:}
+        -:  219:
+function operator_var called 3 returned 100% blocks executed 100%
+        3:  220:int operator_var(Prog *ptr, char c)
+        -:  221:{
+        5:  222:   if ((strlen(ptr->wds[ptr->cw])==1)&& /*Ensure *5 not accepted*/
+branch  0 taken 67% (fallthrough)
+branch  1 taken 33%
+branch  2 taken 100% (fallthrough)
+branch  3 taken 0%
+        4:  223:      ((c=='+')||(c=='-')||(c=='/')||(c=='*'))){
+branch  0 taken 50% (fallthrough)
+branch  1 taken 50%
+        -:  224:      return 1;
+        -:  225:   }
+        -:  226:   else {
+        2:  227:      variable(ptr);/*If not operator, check it is valid variable*/
+call    0 returned 100%
+        2:  228:      return 1;
+        -:  229:   }
+        -:  230:   return 0;
+        -:  231:}
+        -:  232:
+        -:  233:/*Check that variable is valid letter or number*/
+function variable called 6 returned 100% blocks executed 73%
+        6:  234:int variable(Prog *ptr)
+        -:  235:{
+        6:  236:   char c=ptr->wds[ptr->cw][0];
+        -:  237:
+        6:  238:   if (isupper(c)){
+call    0 returned 100%
+branch  1 taken 33% (fallthrough)
+branch  2 taken 67%
+        2:  239:      is_alpha(ptr);
+call    0 returned 100%
+        2:  240:      return 1;
+        -:  241:   }
+        4:  242:   if (isdigit(c)||(c=='.')||(c=='-')){
+branch  0 taken 0% (fallthrough)
+branch  1 taken 100%
+branch  2 never executed
+branch  3 never executed
+        4:  243:      is_number(ptr, c);
+call    0 returned 100%
+        4:  244:      return 1;
+        -:  245:   }
+        -:  246:   else {
+    #####:  247:      fprintf(stderr, "Invalid variable/No semi-colon after equation\n"); 
+    #####:  248:      exit_prog(ptr);
+call    0 never executed
+        -:  249:   }
+        -:  250:   return 0;
+        -:  251:}
+        -:  252:
+function is_number called 4 returned 100% blocks executed 55%
+        4:  253:int is_number(Prog *ptr, char c)
+        -:  254:{
+        4:  255:   if ((c=='-')||(isdigit(c))){
+branch  0 taken 100% (fallthrough)
+branch  1 taken 0%
+call    2 returned 100%
+branch  3 taken 100% (fallthrough)
+branch  4 taken 0%
+        4:  256:      is_negative(ptr, c);
+call    0 returned 100%
+        4:  257:      return 1;
+        -:  258:   }
+    #####:  259:   if (c=='.'){
+branch  0 never executed
+branch  1 never executed
+    #####:  260:      is_float(ptr,c);
+call    0 never executed
+    #####:  261:      return 1;
+        -:  262:   }
+        -:  263:   else {
+    #####:  264:      fprintf(stderr, "Invalid variable/No semi-colon after equation\n"); 
+    #####:  265:      exit_prog(ptr); 
+call    0 never executed
+        -:  266:   }  
+        -:  267:   return 0;
+        -:  268:}
+        -:  269:
+function is_float called 0 returned 0% blocks executed 0%
+    #####:  270:void is_float(Prog *ptr, char c)
+        -:  271:{
+        -:  272:   int i=1;
+        -:  273:   
+    #####:  274:   while (ptr->wds[ptr->cw][i]!='\0'){
+branch  0 never executed
+branch  1 never executed
+        -:  275:      c = ptr->wds[ptr->cw][i];
+    #####:  276:      if (!isdigit(c)){
+call    0 never executed
+branch  1 never executed
+branch  2 never executed
+    #####:  277:         fprintf(stderr, "Invalid variable/No semi-colon after equation\n"); 
+    #####:  278:         exit_prog(ptr);
+call    0 never executed
+        -:  279:      }
+    #####:  280:      i++;
+        -:  281:   }
+    #####:  282:}
+        -:  283:
+function is_negative called 4 returned 100% blocks executed 77%
+        4:  284:void is_negative(Prog *ptr, char c)
+        -:  285:{
+        -:  286:   int i=1, cnt=0;
+        -:  287:
+       13:  288:   while (ptr->wds[ptr->cw][i]!='\0'){
+branch  0 taken 56%
+branch  1 taken 44% (fallthrough)
+        -:  289:      c = ptr->wds[ptr->cw][i];
+        5:  290:      if (c=='.'){
+branch  0 taken 20% (fallthrough)
+branch  1 taken 80%
+        1:  291:         cnt++;/*If there is more than one decimal point, invalid number*/
+        -:  292:      }
+        5:  293:      if ((!isdigit(c))&&(c!='.')){
+call    0 returned 100%
+branch  1 taken 20% (fallthrough)
+branch  2 taken 80%
+branch  3 taken 0% (fallthrough)
+branch  4 taken 100%
+    #####:  294:         fprintf(stderr, "Invalid variable/No semi-colon after equation\n"); 
+    #####:  295:          exit_prog(ptr);
+call    0 never executed
+        -:  296:      }
+        5:  297:      i++;
+        -:  298:   }
+        4:  299:   if (cnt>1){
+branch  0 taken 0% (fallthrough)
+branch  1 taken 100%
+    #####:  300:      exit_prog(ptr);
+call    0 never executed
+        -:  301:   }
+        4:  302:}
+        -:  303:
+function is_alpha called 4 returned 100% blocks executed 67%
+        4:  304:void is_alpha(Prog *ptr)
+        -:  305:{
+        4:  306:   char c=ptr->wds[ptr->cw][0];
+        -:  307:
+        4:  308:   if (!isupper(c)||(strlen(ptr->wds[ptr->cw])!=1)){
+call    0 returned 100%
+branch  1 taken 100% (fallthrough)
+branch  2 taken 0%
+branch  3 taken 0% (fallthrough)
+branch  4 taken 100%
+    #####:  309:      fprintf(stderr, "Invalid variable/No semi-colon after equation\n"); 
+    #####:  310:      exit_prog(ptr);
+call    0 never executed
+        -:  311:   }
+        4:  312:}
+        -:  313:
+function freewords called 1 returned 100% blocks executed 100%
+        1:  314:void freewords(Prog *ptr)
+        -:  315:{
+        -:  316:   int i;
+        -:  317:
+       22:  318:   for (i=0;i<ptr->lw+1;i++){
+branch  0 taken 95%
+branch  1 taken 5% (fallthrough)
+       21:  319:      free(ptr->wds[i]);
+        -:  320:   }
+        1:  321:   free(ptr->wds);
+        1:  322:   free(ptr);
+        1:  323:}
+        -:  324:
+function exit_prog called 0 returned 0% blocks executed 0%
+    #####:  325:void exit_prog(Prog *ptr)
+        -:  326:{
+    #####:  327:   fprintf(stderr, "'%s %s %s': INVALID. Invalid program.\n", 
+    #####:  328:   ptr->wds[ptr->cw-1], ptr->wds[ptr->cw], ptr->wds[ptr->cw+1]);
+    #####:  329:   freewords(ptr);
+call    0 never executed
+    #####:  330:   exit(1);
+        -:  331:}

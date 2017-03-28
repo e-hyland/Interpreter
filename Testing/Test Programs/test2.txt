@@ -1,0 +1,11 @@
+{
+   DO A FROM 50 TO 1 {
+      FD A
+      RT 30
+      DO B FROM 1.25 TO 8 {
+         SET Cake := A 5 / ;
+         FD C
+         RT 45
+      }      
+   }
+}

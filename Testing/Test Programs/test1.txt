@@ -1,0 +1,11 @@
+{
+   DO A FROM 1 TO A {
+      FD A
+      RT 30
+      DO B FROM 1.25 TO 8 {
+         SET C := A 5 / + * - ;
+         FD C
+         RT 45
+      }      
+   }
+}
